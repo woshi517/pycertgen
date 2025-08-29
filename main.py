@@ -62,7 +62,7 @@ async def html_to_image(req: HtmlRequest):
         )
 
         logger.info(f"Returning response for {filename}")
-        return JSONResponse({"url": f"http://localhost:8000/static/{filename}"})
+        return JSONResponse({"url": f"https://pycertgen-production.up.railway.app/static/{filename}"})
 
     except Exception as e:
         logger.error(f"Error: {str(e)}")
