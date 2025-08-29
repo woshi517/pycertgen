@@ -1,2 +1,2 @@
 [phases.setup]
-apt_pkgs = ["wkhtmltopdf"]
+aptPkgs = ["wkhtmltopdf"]
