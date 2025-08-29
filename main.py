@@ -75,3 +75,7 @@ async def get_image(filename: str):
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="image/png")
     return JSONResponse({"error": "File not found"}, status_code=404)
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the HTML to Image API"}
