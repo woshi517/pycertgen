@@ -1,9 +1,13 @@
 FROM python:3.9-slim
 
-# Install wkhtmltopdf and dependencies
+# Install system dependencies for WeasyPrint
 RUN apt-get update && apt-get install -y \
-    wkhtmltopdf \
-    xvfb \
+    libpango-1.0-0 \
+    libharfbuzz0b \
+    libpangoft2-1.0-0 \
+    libgtk-3-0 \
+    libffi-dev \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
