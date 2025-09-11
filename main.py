@@ -87,11 +87,9 @@ def generate_image_blocking(html: str, filepath: str, width: int, height: int):
             }}
         ''')
 
-        # Create HTML document and render to PNG
+        # Create HTML document and write directly to PNG
         html_doc = HTML(string=html)
-        # Render the document first, then write to PNG
-        document = html_doc.render(stylesheets=[css])
-        document.write_png(filepath)
+        html_doc.write_png(filepath, stylesheets=[css])
         
         logger.info(f"Image generation completed for {filepath}")
     except Exception as e:
@@ -117,11 +115,9 @@ def generate_pdf_blocking(html: str, filepath: str, width: int, height: int):
             }}
         ''')
 
-        # Create HTML document and render to PDF
+        # Create HTML document and write directly to PDF
         html_doc = HTML(string=html)
-        # Render the document first, then write to PDF
-        document = html_doc.render(stylesheets=[css])
-        document.write_pdf(filepath)
+        html_doc.write_pdf(filepath, stylesheets=[css])
         
         logger.info(f"PDF generation completed for {filepath}")
     except Exception as e:
