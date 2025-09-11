@@ -38,8 +38,8 @@ executor = ThreadPoolExecutor(max_workers=2)
 # Ensure static directory exists
 os.makedirs("static", exist_ok=True)
 
-# Template cache for compiled templates
-template_cache = {}
+# Template cache for compiled templates - removed since HTML objects aren't serializable
+# template_cache = {}
 
 # Cleanup old files (older than 1 hour)
 def cleanup_old_files():
@@ -82,19 +82,16 @@ def generate_image_blocking(html: str, filepath: str, width: int, height: int):
             body {{
                 margin: 0;
                 padding: 0;
+                width: {width}px;
+                height: {height}px;
             }}
         ''')
 
-        # Use template caching
-        html_hash = hashlib.md5(html.encode()).hexdigest()
-        if html_hash in template_cache:
-            document = template_cache[html_hash]
-        else:
-            document = HTML(string=html)
-            template_cache[html_hash] = document
-            
-        # Generate PNG directly
-        document.write_png(filepath, stylesheets=[css])
+        # Create HTML document and render to PNG
+        html_doc = HTML(string=html)
+        # Render the document first, then write to PNG
+        document = html_doc.render(stylesheets=[css])
+        document.write_png(filepath)
         
         logger.info(f"Image generation completed for {filepath}")
     except Exception as e:
@@ -115,19 +112,16 @@ def generate_pdf_blocking(html: str, filepath: str, width: int, height: int):
             body {{
                 margin: 0;
                 padding: 0;
+                width: {width}px;
+                height: {height}px;
             }}
         ''')
 
-        # Use template caching
-        html_hash = hashlib.md5(html.encode()).hexdigest()
-        if html_hash in template_cache:
-            document = template_cache[html_hash]
-        else:
-            document = HTML(string=html)
-            template_cache[html_hash] = document
-            
-        # Generate PDF directly
-        document.write_pdf(filepath, stylesheets=[css])
+        # Create HTML document and render to PDF
+        html_doc = HTML(string=html)
+        # Render the document first, then write to PDF
+        document = html_doc.render(stylesheets=[css])
+        document.write_pdf(filepath)
         
         logger.info(f"PDF generation completed for {filepath}")
     except Exception as e:
