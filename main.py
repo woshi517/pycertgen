@@ -74,6 +74,8 @@ class HtmlRequest(BaseModel):
     html: str = Field(..., max_length=1000000)  # Limit to 1MB
     width: float = Field(297.0, gt=0)  # Width in mm, default A4 landscape width
     height: float = Field(210.0, gt=0)  # Height in mm, default A4 landscape height
+    viewport_width: Optional[float] = None  # PHP sends this field
+    viewport_height: Optional[float] = None  # PHP sends this field
     certificate_data: Optional[CertificateData] = None
 
     @validator('html')
@@ -117,7 +119,7 @@ def generate_pdf_blocking(html: str, filepath: str, width: float = 297.0, height
 @app.post("/html-to-pdf")
 async def html_to_pdf(req: HtmlRequest):
     # Run cleanup before generating new PDF
-    cleanup_old_files()
+    #cleanup_old_files()
     
     filename = f"{uuid.uuid4()}.pdf"
     filepath = f"static/{filename}"
@@ -144,6 +146,10 @@ async def html_to_pdf(req: HtmlRequest):
     conn.commit()
     conn.close()
     
+    # Use viewport_width/viewport_height if provided (from PHP), otherwise use width/height
+    width = req.viewport_width if req.viewport_width is not None else req.width
+    height = req.viewport_height if req.viewport_height is not None else req.height
+    
     try:
         logger.info(f"Received request, generating {filename}")
 
@@ -154,8 +160,8 @@ async def html_to_pdf(req: HtmlRequest):
             generate_pdf_blocking,
             req.html,
             filepath,
-            req.width,
-            req.height,
+            width,
+            height,
         )
 
         logger.info(f"Returning response for {filename}")
