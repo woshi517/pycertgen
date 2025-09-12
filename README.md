@@ -4,8 +4,8 @@ A FastAPI-based service for generating PDF certificates with custom dimensions.
 
 ## Features
 
-- Generate PDFs from HTML content with custom dimensions
-- Document size is determined by request data (no default sizes)
+- Generate PDFs from HTML content with custom page dimensions
+- Default A4 landscape size (297mm x 210mm)
 - Serve generated certificates via URL
 
 ## API Endpoints
@@ -21,13 +21,9 @@ Generate a PDF from HTML content with custom dimensions.
 {
   "html": "<html>...</html>",
   "width": 297.0,
-  "height": 210.0,
-  "viewport_width": 297.0,
-  "viewport_height": 210.0
+  "height": 210.0
 }
 ```
-
-**Note:** When `viewport_width` and `viewport_height` are provided (typically from PHP), they take precedence over `width` and `height` values for determining the document size.
 
 **Response:**
 ```json
@@ -63,7 +59,7 @@ Retrieve a generated PDF file.
 ```python
 import requests
 
-# Certificate data (width and height are now required fields)
+# Certificate data
 data = {
     "html": "<html><body><h1>Certificate of Completion</h1><p>This certifies that John Doe completed the Python Programming course.</p></body></html>",
     "width": 297.0,
