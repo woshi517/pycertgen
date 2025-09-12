@@ -40,10 +40,10 @@ os.makedirs("static", exist_ok=True)
 
 class HtmlRequest(BaseModel):
     html: str = Field(..., max_length=1000000)  # Limit to 1MB
-    width: float = Field(297.0, gt=0)  # Width in mm, default A4 landscape width
-    height: float = Field(210.0, gt=0)  # Height in mm, default A4 landscape height
-    viewport_width: Optional[float] = None  # PHP sends this field
-    viewport_height: Optional[float] = None  # PHP sends this field
+    width: float = Field(..., gt=0, le=2000)  # Width in mm, required field
+    height: float = Field(..., gt=0, le=2000)  # Height in mm, required field
+    viewport_width: Optional[float] = Field(None, gt=0, le=2000)  # PHP sends this field
+    viewport_height: Optional[float] = Field(None, gt=0, le=2000)  # PHP sends this field
 
     @validator('html')
     def html_must_not_be_empty(cls, v):
@@ -88,7 +88,8 @@ async def html_to_pdf(req: HtmlRequest):
     filename = f"{uuid.uuid4()}.pdf"
     filepath = f"static/{filename}"
     
-    # Use viewport_width/viewport_height if provided (from PHP), otherwise use width/height
+    # Use viewport dimensions if provided (from PHP), otherwise use width/height from request
+    # This ensures document size is always based on request data, with viewport taking precedence when available
     width = req.viewport_width if req.viewport_width is not None else req.width
     height = req.viewport_height if req.viewport_height is not None else req.height
     
