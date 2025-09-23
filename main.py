@@ -35,9 +35,10 @@ app.add_middleware(
 # Thread pool untuk blocking operations
 executor = ThreadPoolExecutor(max_workers=2)
 
-# Ensure certificates directory exists
-CERTIFICATES_DIR = "../asbisindo/public/store/certificates"
+# Certificate storage directory - Railway persistent volume
+CERTIFICATES_DIR = "/mnt/pdfs/generated"
 os.makedirs(CERTIFICATES_DIR, exist_ok=True)
+logger.info(f"Using certificates directory: {CERTIFICATES_DIR}")
 
 class HtmlRequest(BaseModel):
     html: str = Field(..., max_length=1000000)  # Limit to 1MB
@@ -108,22 +109,24 @@ async def html_to_pdf(req: HtmlRequest):
         )
 
         logger.info(f"Returning response for {filename}")
-        # Use environment variable for base URL, fallback to default
-        base_url = os.getenv("BASE_URL", "https://pycertgen-production.up.railway.app")
-        cert_url = f"{base_url}/store/certificates/{filename}"
+        # Return URL path to the stored PDF
+        pdf_url = f"/pdfs/{filename}"
         
-        return JSONResponse({"url": cert_url})
+        return JSONResponse({"pdf_url": pdf_url})
 
     except Exception as e:
         logger.error(f"Error generating PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-@app.get("/store/certificates/{filename}")
-async def get_file(filename: str):
+@app.get("/pdfs/{filename}")
+async def get_pdf(filename: str):
+    # Security check - ensure filename is safe
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
     file_path = os.path.join(CERTIFICATES_DIR, filename)
-    if os.path.exists(file_path):
-        media_type = "application/pdf" if filename.endswith(".pdf") else "image/png"
-        return FileResponse(file_path, media_type=media_type)
+    if os.path.exists(file_path) and filename.endswith(".pdf"):
+        return FileResponse(file_path, media_type="application/pdf")
     raise HTTPException(status_code=404, detail="File not found")
 
 @app.get("/")

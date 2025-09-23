@@ -23,6 +23,10 @@ COPY . .
 # Create static directory
 RUN mkdir -p static
 
+# Create certificates directory for Railway persistent volume
+# Note: In Railway, this will be mounted as a persistent volume at /mnt/pdfs/generated
+RUN mkdir -p /mnt/pdfs/generated
+
 # Expose port
 EXPOSE 8000
 
