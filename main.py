@@ -35,8 +35,9 @@ app.add_middleware(
 # Thread pool untuk blocking operations
 executor = ThreadPoolExecutor(max_workers=2)
 
-# Ensure static directory exists
-os.makedirs("static", exist_ok=True)
+# Ensure certificates directory exists
+CERTIFICATES_DIR = "../asbisindo/public/store/certificates"
+os.makedirs(CERTIFICATES_DIR, exist_ok=True)
 
 class HtmlRequest(BaseModel):
     html: str = Field(..., max_length=1000000)  # Limit to 1MB
@@ -86,7 +87,7 @@ def generate_pdf_blocking(html: str, filepath: str, width: float = 297.0, height
 @app.post("/html-to-pdf")
 async def html_to_pdf(req: HtmlRequest):
     filename = f"{uuid.uuid4()}.pdf"
-    filepath = f"static/{filename}"
+    filepath = f"{CERTIFICATES_DIR}/{filename}"
     
     # Use viewport_width/viewport_height if provided (from PHP), otherwise use width/height
     width = req.viewport_width if req.viewport_width is not None else req.width
@@ -109,7 +110,7 @@ async def html_to_pdf(req: HtmlRequest):
         logger.info(f"Returning response for {filename}")
         # Use environment variable for base URL, fallback to default
         base_url = os.getenv("BASE_URL", "https://pycertgen-production.up.railway.app")
-        cert_url = f"{base_url}/static/{filename}"
+        cert_url = f"{base_url}/store/certificates/{filename}"
         
         return JSONResponse({"url": cert_url})
 
@@ -117,9 +118,9 @@ async def html_to_pdf(req: HtmlRequest):
         logger.error(f"Error generating PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-@app.get("/static/{filename}")
+@app.get("/store/certificates/{filename}")
 async def get_file(filename: str):
-    file_path = os.path.join("static", filename)
+    file_path = os.path.join(CERTIFICATES_DIR, filename)
     if os.path.exists(file_path):
         media_type = "application/pdf" if filename.endswith(".pdf") else "image/png"
         return FileResponse(file_path, media_type=media_type)
