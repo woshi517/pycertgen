@@ -42,10 +42,9 @@ logger.info(f"Using certificates directory: {CERTIFICATES_DIR}")
 
 class HtmlRequest(BaseModel):
     html: str = Field(..., max_length=1000000)  # Limit to 1MB
-    width: float = Field(297.0, gt=0)  # Width in mm, default A4 landscape width
-    height: float = Field(210.0, gt=0)  # Height in mm, default A4 landscape height
-    viewport_width: Optional[float] = None  # PHP sends this field
-    viewport_height: Optional[float] = None  # PHP sends this field
+    viewport_width: float = Field(..., gt=0)  # Width in mm, required from Laravel
+    viewport_height: float = Field(..., gt=0)  # Height in mm, required from Laravel
+    certificate_id: Optional[str] = None  # Certificate ID from Laravel
 
     @validator('html')
     def html_must_not_be_empty(cls, v):
@@ -56,7 +55,7 @@ class HtmlRequest(BaseModel):
 # PNG generation is not supported in this version of WeasyPrint
 # Only PDF generation is available
 
-def generate_pdf_blocking(html: str, filepath: str, width: float = 297.0, height: float = 210.0):
+def generate_pdf_blocking(html: str, filepath: str, width: float, height: float):
     """Blocking PDF generation function using WeasyPrint"""
     logger.info(f"Starting PDF generation for {filepath} with dimensions {width}mm x {height}mm")
 
@@ -85,14 +84,41 @@ def generate_pdf_blocking(html: str, filepath: str, width: float = 297.0, height
 # PNG generation is not supported in this version of WeasyPrint
 # Only PDF generation is available
 
-@app.post("/html-to-pdf")
-async def html_to_pdf(req: HtmlRequest):
-    filename = f"{uuid.uuid4()}.pdf"
+@app.get("/get/{certificate_id}")
+async def get_certificate(certificate_id: str):
+    """Check if a certificate already exists for the given ID"""
+    # Create a deterministic filename based on the certificate ID
+    filename = f"{certificate_id}.pdf"
     filepath = f"{CERTIFICATES_DIR}/{filename}"
     
-    # Use viewport_width/viewport_height if provided (from PHP), otherwise use width/height
-    width = req.viewport_width if req.viewport_width is not None else req.width
-    height = req.viewport_height if req.viewport_height is not None else req.height
+    # Security check - ensure certificate_id is safe
+    if ".." in certificate_id or "/" in certificate_id or "\\" in certificate_id:
+        raise HTTPException(status_code=400, detail="Invalid certificate ID")
+    
+    # Check if the file exists
+    if os.path.exists(filepath) and filename.endswith(".pdf"):
+        logger.info(f"Certificate found for ID: {certificate_id}")
+        # Return URL path to the existing PDF
+        pdf_url = f"/pdfs/{filename}"
+        return JSONResponse({"pdf_url": pdf_url})
+    
+    # If file doesn't exist, return 404
+    logger.info(f"Certificate not found for ID: {certificate_id}")
+    raise HTTPException(status_code=404, detail="Certificate not found")
+
+@app.post("/html-to-pdf")
+async def html_to_pdf(req: HtmlRequest):
+    # Use certificate ID from Laravel if provided, otherwise generate a random one
+    if req.certificate_id:
+        filename = f"{req.certificate_id}.pdf"
+    else:
+        filename = f"{uuid.uuid4()}.pdf"
+        
+    filepath = f"{CERTIFICATES_DIR}/{filename}"
+    
+    # Use viewport dimensions from Laravel (required fields)
+    width = req.viewport_width
+    height = req.viewport_height
     
     try:
         logger.info(f"Received request, generating {filename}")
